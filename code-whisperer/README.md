@@ -1,71 +1,53 @@
-# code-whisperer README
+# Code Whisperer
 
-This is the README for your extension "code-whisperer". After writing up a brief description, we recommend including the following sections.
+AI-powered code assistant with RAG capabilities that helps developers understand and work with their codebase through natural language queries.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Code Analysis**: Analyze selected code or entire files using AI
+- **Natural Language Queries**: Ask questions about your code in plain English
+- **Multiple Analysis Types**: 
+  - Explain code functionality
+  - Optimize performance
+  - Debug issues
+  - Refactor suggestions
+  - Code review
+  - Generate code
 
-For example if there is an image subfolder under your extension project workspace:
+## Usage
 
-\!\[feature X\]\(images/feature-x.png\)
+1. Open a code file in VS Code
+2. Select some code (optional)
+3. Use one of these methods:
+   - **Command Palette**: `Ctrl+Shift+P` → "Code Whisperer: Analyze Selected Code"
+   - **Right-click**: Right-click on selected code → "Code Whisperer: Analyze Selected Code"
+   - **Keyboard**: `Ctrl+Alt+A` to analyze selected code
+   - **Interface**: `Ctrl+Shift+P` → "Code Whisperer: Show Interface"
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Commands
+
+- `Code Whisperer: Start` - Open the Code Whisperer interface
+- `Code Whisperer: Analyze Code` - Analyze current file or selection
+- `Code Whisperer: Analyze Selected Code` - Analyze currently selected code
+- `Code Whisperer: Show Interface` - Show the Code Whisperer panel
+- `Code Whisperer: Test Extension` - Test that the extension is working
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- VS Code 1.74.0 or later
+- Backend server running on localhost:8002 (for full functionality)
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Backend integration is currently in development
+- Mock responses are shown when backend is not available
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
+Initial development version with frontend interface and command structure.
 
-Initial release of ...
+## Development
 
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+This extension is currently in development. Backend integration and full AI capabilities are being implemented.

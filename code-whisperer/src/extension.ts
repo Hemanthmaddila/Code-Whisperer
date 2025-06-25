@@ -21,6 +21,56 @@ export function activate(context: vscode.ExtensionContext) {
 		webviewProvider.createOrShow();
 	});
 
+	// Register command to analyze selected code
+	const analyzeSelectionCommand = vscode.commands.registerCommand('codewhisperer.analyzeSelection', () => {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('No active editor found. Please open a file first.');
+			return;
+		}
+
+		const selection = editor.selection;
+		const selectedText = editor.document.getText(selection);
+		
+		if (!selectedText.trim()) {
+			vscode.window.showWarningMessage('Please select some code to analyze.');
+			return;
+		}
+
+		// Open the webview and send the selected code for analysis
+		webviewProvider.createOrShow();
+		webviewProvider.analyzeCode(selectedText, editor.document.fileName);
+	});
+
+	// Register command to analyze code (general)
+	const analyzeCodeCommand = vscode.commands.registerCommand('codewhisperer.analyzeCode', () => {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage('No active editor found. Please open a file first.');
+			return;
+		}
+
+		// Get all content if no selection
+		const selection = editor.selection;
+		const selectedText = selection.isEmpty ? 
+			editor.document.getText() : 
+			editor.document.getText(selection);
+
+		if (!selectedText.trim()) {
+			vscode.window.showWarningMessage('No code found to analyze.');
+			return;
+		}
+
+		// Open the webview and send the code for analysis
+		webviewProvider.createOrShow();
+		webviewProvider.analyzeCode(selectedText, editor.document.fileName);
+	});
+
+	// Register command to show interface
+	const showInterfaceCommand = vscode.commands.registerCommand('codewhisperer.showInterface', () => {
+		webviewProvider.createOrShow();
+	});
+
 	// Add a simple test command to verify registration works
 	const testCommand = vscode.commands.registerCommand('codewhisperer.test', () => {
 		vscode.window.showInformationMessage('✅ Code Whisperer Test Command Works!');
@@ -33,7 +83,14 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Add commands to subscriptions for proper cleanup
-	context.subscriptions.push(startCommand, testCommand, ingestCommand);
+	context.subscriptions.push(
+		startCommand, 
+		analyzeSelectionCommand, 
+		analyzeCodeCommand, 
+		showInterfaceCommand, 
+		testCommand, 
+		ingestCommand
+	);
 
 	// Show welcome message on first activation
 	if (context.globalState.get('codewhisperer.firstActivation', true)) {

@@ -11,6 +11,9 @@
   ],
   "activationEvents": [
     "onCommand:codewhisperer.start",
+    "onCommand:codewhisperer.analyzeCode",
+    "onCommand:codewhisperer.analyzeSelection",
+    "onCommand:codewhisperer.showInterface",
     "onCommand:codewhisperer.test"
   ],
   "main": "./out/extension.js",
@@ -19,6 +22,21 @@
       {
         "command": "codewhisperer.start",
         "title": "Start Code Whisperer",
+        "category": "Code Whisperer"
+      },
+      {
+        "command": "codewhisperer.analyzeCode",
+        "title": "Analyze Code",
+        "category": "Code Whisperer"
+      },
+      {
+        "command": "codewhisperer.analyzeSelection",
+        "title": "Analyze Selected Code",
+        "category": "Code Whisperer"
+      },
+      {
+        "command": "codewhisperer.showInterface",
+        "title": "Show Interface",
         "category": "Code Whisperer"
       },
       {
@@ -33,10 +51,34 @@
           "command": "codewhisperer.start"
         },
         {
+          "command": "codewhisperer.analyzeCode"
+        },
+        {
+          "command": "codewhisperer.analyzeSelection",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codewhisperer.showInterface"
+        },
+        {
           "command": "codewhisperer.test"
         }
+      ],
+      "editor/context": [
+        {
+          "command": "codewhisperer.analyzeSelection",
+          "when": "editorHasSelection",
+          "group": "navigation"
+        }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "codewhisperer.analyzeSelection",
+        "key": "ctrl+alt+a",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -49,7 +91,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.101.0",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vscode/test-cli": "^0.0.10",

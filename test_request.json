@@ -1,0 +1,10 @@
+{
+  "query_type": "explain",
+  "query_text": "What does this function do and how can I improve it?",
+  "code_context": {
+    "file_path": "example.py",
+    "language": "python",
+    "selected_code": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)"
+  },
+  "include_examples": true
+} 
