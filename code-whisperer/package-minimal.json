@@ -1,0 +1,28 @@
+{
+  "name": "minimal-test",
+  "displayName": "Minimal Test",
+  "description": "Minimal extension test",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["*"],
+  "main": "./out/minimal-test.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "minimal.hello",
+        "title": "Minimal Hello",
+        "category": "Test"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.8.3"
+  }
+} 
