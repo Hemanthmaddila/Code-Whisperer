@@ -1,4 +1,5 @@
 // API Client for Code Whisperer Backend Service
+import axios, { AxiosResponse, AxiosError } from 'axios';
 
 export interface CodeContext {
     file_path: string;
@@ -67,7 +68,7 @@ export class CodeWhispererApiClient {
     private baseUrl: string;
     private timeout: number;
 
-    constructor(baseUrl: string = 'http://localhost:8002', timeout: number = 30000) {
+    constructor(baseUrl: string = 'http://localhost:8000', timeout: number = 30000) {
         this.baseUrl = baseUrl;
         this.timeout = timeout;
     }
@@ -77,23 +78,17 @@ export class CodeWhispererApiClient {
      */
     async query(request: QueryRequest): Promise<QueryResponse> {
         try {
-            const response = await this.makeRequest('/api/v1/query', {
-                method: 'POST',
+            const response = await axios.post<QueryResponse>(`${this.baseUrl}/api/query`, request, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(request),
+                timeout: this.timeout,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error', message: 'Failed to parse error response' })) as ApiError;
-                throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json() as QueryResponse;
+            return response.data;
         } catch (error) {
             console.error('Query API error:', error);
-            throw this.handleApiError(error);
+            throw this.handleAxiosError(error);
         }
     }
 
@@ -102,23 +97,17 @@ export class CodeWhispererApiClient {
      */
     async ingest(request: IngestRequest): Promise<IngestResponse> {
         try {
-            const response = await this.makeRequest('/api/v1/ingest', {
-                method: 'POST',
+            const response = await axios.post<IngestResponse>(`${this.baseUrl}/api/ingest`, request, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(request),
+                timeout: this.timeout,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error', message: 'Failed to parse error response' })) as ApiError;
-                throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json() as IngestResponse;
+            return response.data;
         } catch (error) {
             console.error('Ingest API error:', error);
-            throw this.handleApiError(error);
+            throw this.handleAxiosError(error);
         }
     }
 
@@ -127,14 +116,11 @@ export class CodeWhispererApiClient {
      */
     async healthCheck(): Promise<HealthResponse | null> {
         try {
-            const response = await this.makeRequest('/health', {
-                method: 'GET',
+            const response = await axios.get<HealthResponse>(`${this.baseUrl}/health`, {
+                timeout: this.timeout,
             });
             
-            if (response.ok) {
-                return await response.json() as HealthResponse;
-            }
-            return null;
+            return response.data;
         } catch (error) {
             console.error('Health check failed:', error);
             return null;
@@ -146,18 +132,14 @@ export class CodeWhispererApiClient {
      */
     async getStatus(): Promise<any> {
         try {
-            const response = await this.makeRequest('/status', {
-                method: 'GET',
+            const response = await axios.get(`${this.baseUrl}/status`, {
+                timeout: this.timeout,
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             console.error('Status API error:', error);
-            throw this.handleApiError(error);
+            throw this.handleAxiosError(error);
         }
     }
 
@@ -166,36 +148,13 @@ export class CodeWhispererApiClient {
      */
     async testConnection(): Promise<boolean> {
         try {
-            const response = await this.makeRequest('/', {
-                method: 'GET',
+            const response = await axios.get(`${this.baseUrl}/`, {
+                timeout: this.timeout,
             });
-            return response.ok;
+            return response.status === 200;
         } catch (error) {
             console.error('Connection test failed:', error);
             return false;
-        }
-    }
-
-    private async makeRequest(endpoint: string, options: RequestInit): Promise<Response> {
-        const url = `${this.baseUrl}${endpoint}`;
-        
-        // Create an AbortController for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-        try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal,
-            });
-            clearTimeout(timeoutId);
-            return response;
-        } catch (error) {
-            clearTimeout(timeoutId);
-            if (error instanceof Error && error.name === 'AbortError') {
-                throw new Error(`Request timeout after ${this.timeout}ms`);
-            }
-            throw error;
         }
     }
 
@@ -209,6 +168,21 @@ export class CodeWhispererApiClient {
         }
         
         return new Error('An unknown API error occurred');
+    }
+
+    private handleAxiosError(error: any): Error {
+        if (error.response) {
+            // Server responded with error status
+            const response = error.response;
+            const errorData = response.data as ApiError;
+            return new Error(errorData?.message || errorData?.error || `HTTP ${response.status}: ${response.statusText}`);
+        } else if (error.request) {
+            // Request was made but no response received
+            return new Error('No response from server. Please check if the backend is running.');
+        } else {
+            // Something else happened
+            return new Error(error.message || 'An unknown error occurred');
+        }
     }
 
     /**
@@ -229,4 +203,4 @@ export class CodeWhispererApiClient {
 /**
  * Singleton instance of the API client configured for our working backend
  */
-export const apiClient = new CodeWhispererApiClient('http://localhost:8002'); 
+export const apiClient = new CodeWhispererApiClient('http://localhost:8000'); 

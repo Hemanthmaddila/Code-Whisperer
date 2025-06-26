@@ -22,7 +22,11 @@ let state = {
     currentQuery: '',
     currentQueryType: 'explain',
     lastResponse: null,
-    connectionStatus: 'unknown'
+    connectionStatus: 'unknown',
+    hasActiveFile: false,
+    currentFileName: '',
+    currentLanguage: '',
+    hasSelection: false
 };
 
 // Initialize when DOM is ready
@@ -99,12 +103,35 @@ function autoResizeTextarea() {
 function updateSubmitButtonState() {
     const hasText = queryInput.value.trim().length > 0;
     const isConnected = state.connectionStatus === 'connected';
-    submitBtn.disabled = !hasText || state.isLoading || !isConnected;
+    // More lenient file check - allow if we've seen a file recently or have current file name
+    const hasFile = state.hasActiveFile !== false || state.currentFileName.length > 0;
+    
+    submitBtn.disabled = !hasText || state.isLoading || !isConnected || !hasFile;
+    
+    // Update button text based on context
+    if (!hasFile && state.currentFileName.length === 0) {
+        submitBtn.textContent = 'Open a Code File First';
+    } else if (!isConnected) {
+        submitBtn.textContent = 'Backend Disconnected';
+    } else if (state.isLoading) {
+        submitBtn.textContent = 'Analyzing...';
+    } else {
+        submitBtn.textContent = 'Ask Code Whisperer';
+    }
 }
 
 function handleSubmit() {
     const query = queryInput.value.trim();
     const queryType = queryTypeSelect ? queryTypeSelect.value : 'explain';
+    
+    console.log('🚀 Submit clicked! State:', {
+        query: query,
+        queryType: queryType,
+        connectionStatus: state.connectionStatus,
+        hasActiveFile: state.hasActiveFile,
+        currentFileName: state.currentFileName,
+        isLoading: state.isLoading
+    });
     
     if (!query) {
         showError('Please enter a query or question about your code.');
@@ -112,9 +139,14 @@ function handleSubmit() {
     }
 
     if (state.connectionStatus !== 'connected') {
-        showError('Backend connection is not available. Please check if the server is running on localhost:8002.');
+        console.log('❌ Submit blocked: Not connected. Connection status:', state.connectionStatus);
+        showError('Backend connection is not available. Please check if the server is running on localhost:8000.');
         return;
     }
+
+    // Don't block submission if file context is temporarily lost due to focus change
+    // The backend will handle file detection properly
+    console.log('✅ Proceeding with query submission...');
 
     // Update state
     state.isLoading = true;
@@ -174,6 +206,9 @@ function handleMessage(event) {
         case 'autoAnalyze':
             handleAutoAnalyze(message);
             break;
+        case 'fileContext':
+            handleFileContext(message);
+            break;
         default:
             console.warn('Unknown message type:', message.type);
     }
@@ -197,6 +232,7 @@ function handleError(message) {
 }
 
 function handleConnectionStatus(message) {
+    console.log('🔍 Connection status update:', message);
     switch (message.status) {
         case 'connected':
             setConnectionStatus('connected', `✅ Connected (v${message.version || '1.0'})`);
@@ -213,6 +249,7 @@ function handleConnectionStatus(message) {
 }
 
 function setConnectionStatus(status, text) {
+    console.log('🔗 Setting connection status:', status, text);
     state.connectionStatus = status;
     updateState();
     
@@ -266,6 +303,45 @@ function handleAutoAnalyze(message) {
     } else {
         showError('Backend connection is not available. Please check if the server is running.');
     }
+}
+
+function handleFileContext(message) {
+    // Update application state
+    state.hasActiveFile = message.hasFile;
+    state.currentFileName = message.fileName;
+    state.currentLanguage = message.language;
+    state.hasSelection = message.hasSelection;
+    
+    // Update the placeholder text and UI based on file context
+    if (queryInput) {
+        if (message.hasFile) {
+            const selectionText = message.hasSelection ? ` (${message.selectionLength} chars selected)` : '';
+            queryInput.placeholder = `Ask about your ${message.language} code in ${message.fileName}${selectionText}...
+
+Examples:
+• What does this function do?
+• How can I improve performance?
+• Are there any bugs in this code?
+• Suggest better variable names`;
+        } else {
+            queryInput.placeholder = `Open a code file first, then ask your questions...
+
+Steps:
+1. Open a code file (any .py, .js, .ts, .java, etc.)
+2. Select some code or place cursor in a function
+3. Ask your question here!`;
+        }
+    }
+    
+    // Update submit button state
+    updateSubmitButtonState();
+    
+    // If no response is currently shown and we have a file, clear the "No Code File Open" message
+    if (message.hasFile && responseContainer && responseContainer.classList.contains('hidden')) {
+        hideResponse();
+    }
+    
+    console.log('File context updated:', message);
 }
 
 function setLoadingState(loading) {

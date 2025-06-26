@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { CodeWhispererWebviewProvider } from './webview';
+import { apiClient } from './api';
 
 let webviewProvider: CodeWhispererWebviewProvider;
 
@@ -72,8 +73,42 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Add a simple test command to verify registration works
-	const testCommand = vscode.commands.registerCommand('codewhisperer.test', () => {
-		vscode.window.showInformationMessage('✅ Code Whisperer Test Command Works!');
+	const testCommand = vscode.commands.registerCommand('codewhisperer.test', async () => {
+		vscode.window.showInformationMessage('🧪 Testing Code Whisperer API...');
+		
+		try {
+			// Test health check first
+			const health = await apiClient.healthCheck();
+			console.log('Health check result:', health);
+			
+			if (!health) {
+				vscode.window.showErrorMessage('❌ Backend health check failed');
+				return;
+			}
+
+			// Test actual query
+			const testRequest = {
+				query_type: 'explain' as const,
+				query_text: 'What does this code do?',
+				code_context: {
+					file_path: 'test.py',
+					language: 'python',
+					selected_code: 'def hello():\n    print("Hello World")',
+					full_file_content: ''
+				},
+				include_examples: true
+			};
+
+			console.log('Sending test query:', testRequest);
+			const response = await apiClient.query(testRequest);
+			console.log('Query response:', response);
+			
+			vscode.window.showInformationMessage(`✅ API Test Success! Response: ${response.explanation.substring(0, 100)}...`);
+			
+		} catch (error) {
+			console.error('API test failed:', error);
+			vscode.window.showErrorMessage(`❌ API Test Failed: ${error}`);
+		}
 	});
 
 	// Register additional commands for future use

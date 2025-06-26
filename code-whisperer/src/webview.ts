@@ -7,7 +7,17 @@ export class CodeWhispererWebviewProvider {
     private panel: vscode.WebviewPanel | undefined;
     private disposables: vscode.Disposable[] = [];
 
-    constructor(private readonly context: vscode.ExtensionContext) {}
+    constructor(private readonly context: vscode.ExtensionContext) {
+        // Watch for active editor changes to update file context
+        this.disposables.push(
+            vscode.window.onDidChangeActiveTextEditor(() => {
+                this.updateFileContext();
+            }),
+            vscode.window.onDidChangeTextEditorSelection(() => {
+                this.updateFileContext();
+            })
+        );
+    }
 
     public createOrShow(): void {
         const column = vscode.window.activeTextEditor
@@ -47,8 +57,11 @@ export class CodeWhispererWebviewProvider {
         // Clean up when the panel is closed
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
-        // Test backend connection when panel is created
-        this.testBackendConnection();
+        // Wait for webview to load, then test connection and send file context
+        setTimeout(() => {
+            this.testBackendConnection();
+            this.updateFileContext();
+        }, 1000);
     }
 
     public analyzeCode(selectedCode: string, fileName: string): void {
@@ -71,30 +84,66 @@ export class CodeWhispererWebviewProvider {
     }
 
     private async testBackendConnection(): Promise<void> {
+        console.log('🔄 Testing backend connection...');
         try {
             const health = await apiClient.healthCheck();
             if (health) {
                 console.log('✅ Backend connected:', health);
-                this.panel?.webview.postMessage({
+                const connectionMessage = {
                     type: 'connectionStatus',
                     status: 'connected',
                     version: health.version,
                     geminiStatus: health.dependencies?.gemini_api
-                });
+                };
+                console.log('📤 Sending connection status to webview:', connectionMessage);
+                this.panel?.webview.postMessage(connectionMessage);
             } else {
                 console.warn('⚠️ Backend health check failed');
-                this.panel?.webview.postMessage({
+                const disconnectedMessage = {
                     type: 'connectionStatus',
                     status: 'disconnected',
                     error: 'Health check failed'
-                });
+                };
+                console.log('📤 Sending disconnected status to webview:', disconnectedMessage);
+                this.panel?.webview.postMessage(disconnectedMessage);
             }
         } catch (error) {
             console.error('❌ Backend connection failed:', error);
-            this.panel?.webview.postMessage({
+            const errorMessage = {
                 type: 'connectionStatus',
                 status: 'error',
                 error: error instanceof Error ? error.message : 'Connection failed'
+            };
+            console.log('📤 Sending error status to webview:', errorMessage);
+            this.panel?.webview.postMessage(errorMessage);
+        }
+    }
+
+    private updateFileContext(): void {
+        if (!this.panel) return;
+
+        const editor = vscode.window.activeTextEditor;
+        if (editor) {
+            const fileName = path.basename(editor.document.fileName || 'untitled');
+            const language = editor.document.languageId;
+            const selectedText = editor.document.getText(editor.selection);
+            
+            this.panel.webview.postMessage({
+                type: 'fileContext',
+                hasFile: true,
+                fileName: fileName,
+                language: language,
+                hasSelection: selectedText.trim().length > 0,
+                selectionLength: selectedText.length
+            });
+        } else {
+            this.panel.webview.postMessage({
+                type: 'fileContext',
+                hasFile: false,
+                fileName: '',
+                language: '',
+                hasSelection: false,
+                selectionLength: 0
             });
         }
     }
